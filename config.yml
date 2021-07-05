@@ -1,7 +1,7 @@
 #   AAC Configuration
 # by jaxos
 
-# Checks: | KillAura | Aim | Reach | Movement | Velocity | NoSlow | FastBow | FastUse | Mics
+# Checks: | KillAura | Aim | Reach | Movement | Velocity | NoSlow | FastBow | FastUse |
 
 
 mysql:
