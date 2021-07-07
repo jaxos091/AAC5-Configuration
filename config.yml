@@ -12,9 +12,7 @@ mysql:
   username: ""
   password: ""
 
-# AAC supports cross server alerts through BungeeCord.
-# AAC must be installed on every server on the network, and all instances must be connected to the same database.
-# Do NOT enable this option if you are not using BungeeCord, or detections will be sent directly to players.
+# AAC supports cross server alerts through BungeeCord. (Do NOT enable this option if you are not using BungeeCord)
 bungeecord: false
 
 # Configure the different checks in AAC - modular components that try to detect certain categories of cheating
@@ -26,7 +24,7 @@ checks:
     # delays.vl represents an estimate of the total time advantage that a player has gained by cheating
     vl:
       mitigate: false
-      threshold: 1.0
+      threshold: -1
       max: 1.0
       decay: 0.01
 
@@ -47,9 +45,9 @@ checks:
     # move.vl represents an estimate of the total extra distance a player has travelled by cheating
     vl:
       mitigate: false
-      threshold: 1.0
-      max: 3.0
-      decay: 0.125
+      threshold: -1
+      max: 2.0
+      decay: 0.05
 
     # move.timer represents an estimate of the total time advantage a player has gained by cheating
     timer:
@@ -63,7 +61,7 @@ checks:
     phase_vl: 1.0
 
     # AAC can transparently block nofall by replacing ground calculations from the client with its own calculations
-    block_nofall: true
+    block_nofall: false
 
     # AAC will wait at most this long for a player to respond to velocity sent by the server
     max_vel_time: 1.0
@@ -107,7 +105,7 @@ checks:
     check_tick_delay: true
     check_noswing: true
     check_timing: true
-    sample_size: 20
+    sample_size: 25
 
   # The hitbox check verifies that players look at the entities they hit, and that those entities are in range.
   hitbox:
@@ -116,9 +114,9 @@ checks:
     # hitbox.vl represents an estimate of the total extra distance a player has reached by cheating
     vl:
       mitigate: false
-      threshold: 0.5
-      max: 2.0
-      decay: 0.125
+      threshold: -1
+      max: 1.0
+      decay: 0.05
 
     lag_compensation_ticks: 20
     hit_queue_size: 4
@@ -126,11 +124,11 @@ checks:
 
   # The interact check looks for players performing impossible or abnormal interactions with the world.
   interact:
-    enabled: true
+    enabled: false
 
     # AAC will accept interactions as long as the player is aiming close to their target block
     # This is the max angle that AAC will accept (in radians)
-    max_angle_diff: 1.0
+    max_angle_diff: 0
 
     # AAC will not check interactions with these materials
     exempt: []
@@ -138,9 +136,9 @@ checks:
     # interact.vl increases by 1 for each invalid interaction that is detected
     vl:
       mitigate: false
-      threshold: 1.0
-      max: 5.0
-      decay: 0.25
+      threshold: 0
+      max: 0
+      decay: 0
 
   # The misc check looks for certain accurate indicators of cheating
   misc:
@@ -156,7 +154,7 @@ checks:
 analysis:
   # AAC analyses one player at a time, e.g. if your server has 50 players, they will each be analysed every 50 * period
   # seconds. You can force AAC to analyse any particular player at any time with /aac check <player> [players...]
-  period: 0.5
+  period: 1.0
 
   # How far back should AAC look when analysing a player?
   history: 1
@@ -183,12 +181,13 @@ actions:
       - aac_clk_noswing
       - aac_clk_tick_align
       - aac_clk_timing
+      - aac_clk_var
     thresholds:
-      45: "ccmd %player_name% if -ping-<50&-tps->19.8 do /0/ ban %player_name% 20m Unfair Advantage -s /0/ aac reset %player_name%"
-      75: "ccmd %player_name% if -ping-<120&-tps->19.5 do /0/ ban %player_name% 20m Unfair Advantage -s /0/ aac reset %player_name%"
-      110: "ccmd %player_name% if -ping-<250&-tps->19.0 do /0/ ban %player_name% 20m Unfair Advantage -s /0/ aac reset %player_name%"
-      150:
-        - "ban %player_name% 20m Unfair Advantage -s"
+      45: "ccmd %player_name% if (-ping-<75&-tps->19.95)&-uptime->80&-time_online->10000 do /0/ kick %player_name% 20m Unfair Advantage -s /0/ aac reset %player_name%"
+      65: "ccmd %player_name% if (-ping-<180&-tps->19.5)&-uptime->80&-time_online->10000 do /0/ kick %player_name% 20m Unfair Advantage -s /0/ aac reset %player_name%"
+      95: "ccmd %player_name% if (-ping-<350&-tps->19.0)&-uptime->80&-time_online->10000 do /0/ kick %player_name% 20m Unfair Advantage -s /0/ aac reset %player_name%"
+      120:
+        - "kick %player_name% 20m Unfair Advantage -s"
         - "aac reset %player_name% "
 
   aim:
@@ -196,11 +195,14 @@ actions:
     features:
       - aac_aimassist_*
       - aac_misc_*
+      - aac_aimbot_*
     thresholds:
-      35: "ccmd %player_name% if -ping-<50&-tps->19.8 do /0/ ban %player_name% 20m Unfair Advantage -s /0/ aac reset %player_name%"
-      55: "ccmd %player_name% if -ping-<250&-tps->19.0 do /0/ ban %player_name% 20m Unfair Advantage -s /0/ aac reset %player_name%"
-      110:
-        - "ban %player_name% 20m Unfair Advantage -s"
+      35: "ccmd %player_name% if (-ping-<75&-tps->19.95)&-uptime->80 do /0/ kick %player_name% 20m Unfair Advantage -s /0/ aac reset %player_name%"
+      55: "ccmd %player_name% if (-ping-<150&-tps->19.8)&-uptime->80 do /0/ kick %player_name% 20m Unfair Advantage -s /0/ aac reset %player_name%"
+      65: "ccmd %player_name% if (-ping-<250&-tps->19.5)&-uptime->80 do /0/ kick %player_name% 20m Unfair Advantage -s /0/ aac reset %player_name%"
+      70: "ccmd %player_name% if (-ping-<350&-tps->19.0)&-uptime->80 do /0/ kick %player_name% 20m Unfair Advantage -s /0/ aac reset %player_name%"
+      95:
+        - "kick %player_name% 20m Unfair Advantage -s"
         - "aac reset %player_name% "
 
   reach:
@@ -208,26 +210,26 @@ actions:
     features:
       - aac_hitbox_reach
     thresholds:
-      25: "ccmd %player_name% if -ping-<50&-tps->19.8 do /0/ ban %player_name% 20m Unfair Advantage -s /0/ aac reset %player_name%"
-      65: "ccmd %player_name% if -ping-<250&-tps->19.0 do /0/ ban %player_name% 20m Unfair Advantage -s /0/ aac reset %player_name%"
-      95:
-        - "ban %player_name% 20m Unfair Advantage -s"
+      16: "ccmd %player_name% if (-ping-<50&-tps->19.8)&-uptime->80&-time_online->10000 do /0/ kick %player_name% 20m Unfair Advantage -s /0/ aac reset %player_name%"
+      20: "ccmd %player_name% if (-ping-<250&-tps->19.0&-uptime->80&-time_online->10000 do /0/ kick %player_name% 20m Unfair Advantage -s /0/ aac reset %player_name%"
+      32:
+        - "kick %player_name% 20m Unfair Advantage -s"
         - "aac reset %player_name% "
 
 #   MOVE
   movement:
-    delay: 5.0
+    delay: 3.0
     features:
       - aac_move_inf
       - aac_move_generic
       - aac_delays_sneak
       - aac_delays_release
     thresholds:
-      115: "ccmd %player_name% if -ping-<50&-tps->19.8 do /0/ ban %player_name% 20m Unfair Advantage -s /0/ aac reset %player_name%"
-      350: "ccmd %player_name% if -ping-<120&-tps->19.5 do /0/ ban %player_name% 20m Unfair Advantage -s /0/ aac reset %player_name%"
-      550: "ccmd %player_name% if -ping-<250&-tps->19.0 do /0/ ban %player_name% 20m Unfair Advantage -s /0/ aac reset %player_name%"
-      950:
-        - "ban %player_name% 20m Unfair Advantage -s"
+      85: "ccmd %player_name% if (-ping-<50&-tps->19.8 do /0/ kick %player_name% 20m Unfair Advantage -s /0/ aac reset %player_name%"
+      115: "ccmd %player_name% if -ping-<120&-tps->19.5 do /0/ kick %player_name% 20m Unfair Advantage -s /0/ aac reset %player_name%"
+      250: "ccmd %player_name% if -ping-<250&-tps->19.0 do /0/ kick %player_name% 20m Unfair Advantage -s /0/ aac reset %player_name%"
+      550:
+        - "kick %player_name% 20m Unfair Advantage -s"
         - "aac reset %player_name% "
 
   velocity:
@@ -235,10 +237,10 @@ actions:
     features:
       - aac_move_vel
     thresholds:
-      25: "ccmd %player_name% if -ping-<50&-tps->19.8 do /0/ ban %player_name% 20m Unfair Advantage -s /0/ aac reset %player_name%"
-      45: "ccmd %player_name% if -ping-<250&-tps->19.0 do /0/ ban %player_name% 20m Unfair Advantage -s /0/ aac reset %player_name%"
+      25: "ccmd %player_name% if -ping-<50&-tps->19.8 do /0/ kick %player_name% 20m Unfair Advantage -s /0/ aac reset %player_name%"
+      45: "ccmd %player_name% if -ping-<250&-tps->19.0 do /0/ kick %player_name% 20m Unfair Advantage -s /0/ aac reset %player_name%"
       65:
-        - "ban %player_name% 20m Unfair Advantage -s"
+        - "kick %player_name% 20m Unfair Advantage -s"
         - "aac reset %player_name% "
 
   noslow:
@@ -246,10 +248,10 @@ actions:
     features:
       - aac_move_noslow
     thresholds:
-      5: "ccmd %player_name% if -ping-<50&-tps->19.8 do /0/ ban %player_name% 20m Unfair Advantage -s /0/ aac reset %player_name%"
-      25: "ccmd %player_name% if -ping-<250&-tps->19.0 do /0/ ban %player_name% 20m Unfair Advantage -s /0/ aac reset %player_name%"
+      5: "ccmd %player_name% if -ping-<50&-tps->19.8 do /0/ kick %player_name% 20m Unfair Advantage -s /0/ aac reset %player_name%"
+      25: "ccmd %player_name% if -ping-<250&-tps->19.0 do /0/ kick %player_name% 20m Unfair Advantage -s /0/ aac reset %player_name%"
       45:
-        - "ban %player_name% 20m Unfair Advantage -s"
+        - "kick %player_name% 20m Unfair Advantage -s"
         - "aac reset %player_name% "
 
 #   PLAYER
@@ -258,28 +260,17 @@ actions:
     features:
       - aac_delays_bow
     thresholds:
-      10: "ccmd %player_name% if -ping-<50&-tps->19.8 do /0/ ban %player_name% 20m Unfair Advantage -s /0/ aac reset %player_name%"
-      25: "ccmd %player_name% if -ping-<250&-tps->19.0 do /0/ ban %player_name% 20m Unfair Advantage -s /0/ aac reset %player_name%"
+      10: "ccmd %player_name% if -ping-<50&-tps->19.8 do /0/ kick %player_name% 20m Unfair Advantage -s /0/ aac reset %player_name%"
+      25: "ccmd %player_name% if -ping-<250&-tps->19.0 do /0/ kick %player_name% 20m Unfair Advantage -s /0/ aac reset %player_name%"
       35:
-        - "ban %player_name% 20m Unfair Advantage -s"
+        - "kick %player_name% 20m Unfair Advantage -s"
         - "aac reset %player_name% "
-
-  fastuse:
-    delay: 2.0
-    features:
-      - aac_delays_consume
-    thresholds:
-      10: "ccmd %player_name% if -ping-<50&-tps->19.8 do /0/ ban %player_name% 20m Unfair Advantage -s /0/ aac reset %player_name%"
-      25: "ccmd %player_name% if -ping-<250&-tps->19.0 do /0/ ban %player_name% 20m Unfair Advantage -s /0/ aac reset %player_name%"
-      35:
-        - "ban %player_name% 20m Unfair Advantage -s"
-        - "aac reset %player_name% "
-
 
 
 # AAC compiles data from all of its checks and uses it to generate a set of weighted features for each player
-# Each feature accepts certain placeholders. A list of valid placeholders can be found by hovering over each feature's
-# tooltip. You can set the weight of any feature to 0 to disable it.
+# You can set the weight of any feature to 0 to disable it.
+
+# weight (How many violation levels will be added if a player failed this check?)
 features:
   aac_delays_break:
     weight: 0
@@ -288,19 +279,19 @@ features:
     weight: 0
     format: ""
   aac_delays_consume:
-    weight: 1.0
+    weight: 2.0
     format: "Items are consumed by the player faster than is normally possible"
   aac_delays_bow:
-    weight: 1.0
+    weight: 2.0
     format: "The player is drawing their bow faster than is normally possible"
   aac_delays_regen:
     weight: 0
     format: ""
   aac_delays_sneak:
-    weight: 1.0
+    weight: 2.0
     format: "The player is toggling sneak faster than is normally possible"
   aac_delays_release:
-    weight: 1.0
+    weight: 2.0
     format: "The player is releasing their held item faster than is normally possible"
   aac_delays_breakdelay:
     weight: 0
@@ -309,7 +300,7 @@ features:
     weight: 0
     format: ""
   aac_move_vel:
-    weight: 1.0
+    weight: 3.0
     format: "The player ignores velocity sent by the server"
   aac_move_elytra:
     weight: 0
@@ -321,104 +312,104 @@ features:
     weight: 0
     format: ""
   aac_move_lava:
-    weight: 1.0
-    format: "The player has moved {rate} blocks/min incorrectly in lava"
+    weight: 0
+    format: ""
   aac_move_noslow:
-    weight: 1.0
+    weight: 2.0
     format: "The player has frequently ignored sneak/item slowdowns"
   aac_move_generic:
-    weight: 1.0
+    weight: 3.0
     format: "The player has moved {rate} blocks/min incorrectly"
   aac_move_timer:
     weight: 0
-    format: "The player is trying to speed up time"
+    format: ""
   aac_move_inf:
-    weight: 1.0
+    weight: 4.0
     format: "The player is sending invalid movement packets"
   aac_aimbot_spread:
-    weight: 1.0
+    weight: 3.0
     format: "The player's pitch has varied in an unusual way during combat"
   aac_aimbot_sync:
-    weight: 1.0
+    weight: 3.0
     format: "The player's horizontal and vertical aiming patterns are out of sync"
   aac_aimbot_horz:
-    weight: 1.0
+    weight: 3.0
     format: "The player has exhibited yaw patterns characteristic of aimbot"
   aac_aimbot_vert:
-    weight: 1.0
+    weight: 3.0
     format: "The player has exhibited pitch patterns characteristic of aimbot"
   aac_aimbot_snap:
-    weight: 1.0
+    weight: 3.0
     format: "The player performs abnormal head snaps during combat"
   aac_aimbot_zero:
-    weight: 1.0
+    weight: 3.0
     format: "The player's aiming patterns change when they enter combat"
   aac_aimassist_horz:
-    weight: 1.0
+    weight: 2.0
     format: "The player has exhibited yaw patterns characteristic of aimassist"
   aac_aimassist_vert:
-    weight: 1.0
+    weight: 2.0
     format: "The player has exhibited pitch patterns characteristic of aimassist"
   aac_clk_noswing:
-    weight: 1.0
+    weight: 3.0
     format: "The player doesn't swing their arm while attacking"
   aac_clk_tick_align:
-    weight: 1.0
+    weight: 2.0
     format: "The player's arm animations are aligned with tick boundaries"
   aac_clk_timing:
-    weight: 1.0
+    weight: 3.0
     format: "The player's attack packet timings are characteristic of killaura"
   aac_clk_cps:
     weight: 0
-    format: "The player clicks at an average of {mean} cps during combat"
+    format: ""
   aac_clk_var:
     weight: 1.0
     format: "The player's delay between successive clicks has a variance of {mean}"
   aac_hitbox_multi:
-    weight: 1.0
+    weight: 3.0
     format: "The player has attacked extra times in a single tick"
   aac_hitbox_miss:
-    weight: 1.0
+    weight: 3.0
     format: "The player attacks entities without looking at them"
   aac_hitbox_walls:
-    weight: 1.0
+    weight: 3.0
     format: "The player attacks entities through solid walls"
   aac_hitbox_reach:
-    weight: 1.0
+    weight: 4.0
     format: "The player attacks {value} blocks further than normal"
   aac_interact_generic:
-    weight: 1.0
-    format: "The player interacts suspiciously with blocks"
+    weight: 0
+    format: ""
   aac_interact_break:
     weight: 0
-    format: "The player breaks blocks out of their line of sight"
+    format: ""
   aac_interact_place:
     weight: 0
-    format: "The player places blocks out of their line of sight"
+    format: ""
   aac_misc_abilities:
-    weight: 1.0
+    weight: 4.0
     format: "The player has sent invalid player ability packets"
   aac_misc_pitch:
-    weight: 1.0
+    weight: 4.0
     format: "The player has sent invalid rotation pitch packets"
   aac_misc_rotation:
-    weight: 1.0
+    weight: 4.0
     format: "The player is rotating too quickly"
   aac_new_user:
     weight: 0
-    format: "The player recently joined for the first time"
+    format: ""
   aac_new_addr:
     weight: 0
-    format: "The player recently joined from a new ip address"
+    format: ""
   aac_info_move:
     weight: 0
-    format: "Insufficient data to analyse the player's movement"
+    format: ""
   aac_info_combat:
     weight: 0
-    format: "Insufficient data to analyse the player's combat"
+    format: ""
   aac_info_interact:
     weight: 0
-    format: "Insufficient data to analyse the player's interactions"
+    format: ""
 
 # AAC will run the following commands from the CONSOLE before teleporting a staff member to a player
 pre_spectate:
